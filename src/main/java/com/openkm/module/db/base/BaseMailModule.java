@@ -29,6 +29,8 @@ import com.openkm.core.*;
 import com.openkm.core.Config;
 import com.openkm.dao.*;
 import com.openkm.dao.bean.*;
+import com.openkm.extension.dao.WikiPageDAO;
+import com.openkm.extension.dao.bean.WikiPage;
 import com.openkm.module.db.stuff.DbAccessManager;
 import com.openkm.module.db.stuff.SecurityHelper;
 import com.openkm.util.CloneUtils;
@@ -47,9 +49,10 @@ public class BaseMailModule {
 	 */
 	@SuppressWarnings("unchecked")
 	public static NodeMail create(String user, String parentPath, NodeFolder parentFolder, String name, long size, String from,
-	                              String[] reply, String[] to, String[] cc, String[] bcc, Calendar sentDate, Calendar receivedDate, String subject,
-	                              String content, String mimeType, Set<String> keywords, Set<String> categories, Ref<FileUploadResponse> fuResponse)
-			throws PathNotFoundException, AccessDeniedException, ItemExistsException, AutomationException, DatabaseException {
+								  String[] reply, String[] to, String[] cc, String[] bcc, Calendar sentDate, Calendar receivedDate, String subject,
+								  String content, String mimeType, Set<String> keywords, Set<String> categories, Set<NodeProperty> propertyGroups,
+								  List<NodeNote> notes, WikiPage wiki, Ref<FileUploadResponse> fuResponse)
+		throws PathNotFoundException, AccessDeniedException, ItemExistsException, AutomationException, DatabaseException {
 		// AUTOMATION - PRE
 		Map<String, Object> env = new HashMap<String, Object>();
 		env.put(AutomationUtils.PARENT_UUID, parentFolder.getUuid());
@@ -93,6 +96,15 @@ public class BaseMailModule {
 		mailNode.setKeywords(CloneUtils.clone(keywords));
 		mailNode.setCategories(CloneUtils.clone(categories));
 
+		for (NodeProperty nProp : propertyGroups) {
+			NodeProperty nPropClone = new NodeProperty();
+			nPropClone.setNode(mailNode);
+			nPropClone.setName(nProp.getName());
+			nPropClone.setGroup(nProp.getGroup());
+			nPropClone.setValue(nProp.getValue());
+			mailNode.getProperties().add(nPropClone);
+		}
+
 		// Get parent node auth info
 		Map<String, Integer> userPerms = parentFolder.getUserPermissions();
 		Map<String, Integer> rolePerms = parentFolder.getRolePermissions();
@@ -126,6 +138,19 @@ public class BaseMailModule {
 		mailNode.setRolePermissions(CloneUtils.clone(rolePerms));
 
 		NodeMailDAO.getInstance().create(mailNode);
+
+		// Extended Copy Attributes
+		for (NodeNote nNote : CloneUtils.clone(notes)) {
+			BaseNoteModule.create(mailNode.getUuid(), nNote.getAuthor(), nNote.getText());
+		}
+
+		if (wiki != null) {
+			wiki.setNode(mailNode.getUuid());
+			wiki.setDate(Calendar.getInstance());
+			wiki.setLockUser(null);
+			wiki.setDeleted(false);
+			WikiPageDAO.create(wiki);
+		}
 
 		// AUTOMATION - POST
 		env.put(AutomationUtils.MAIL_NODE, mailNode);
@@ -216,8 +241,8 @@ public class BaseMailModule {
 	 * Is invoked from DbMailNode and DbFolderNode.
 	 */
 	public static NodeMail copy(String user, NodeMail srcMailNode, String dstPath, NodeFolder dstFldNode, ExtendedAttributes extAttr)
-			throws ItemExistsException, UserQuotaExceededException, PathNotFoundException, AccessDeniedException, AutomationException,
-			DatabaseException, IOException {
+		throws ItemExistsException, UserQuotaExceededException, PathNotFoundException, AccessDeniedException, AutomationException,
+		DatabaseException, IOException {
 		log.debug("copy({}, {}, {}, {})", new Object[]{user, srcMailNode, dstFldNode, extAttr});
 		NodeMail newMail = null;
 
@@ -229,11 +254,36 @@ public class BaseMailModule {
 
 			Set<String> keywords = new HashSet<String>();
 			Set<String> categories = new HashSet<String>();
-			Ref<FileUploadResponse> fuResponse = new Ref<FileUploadResponse>(new FileUploadResponse());
+			Set<NodeProperty> propertyGroups = new HashSet<>();
+			List<NodeNote> notes = new ArrayList<>();
+			WikiPage wiki = null;
 
+			if (extAttr != null) {
+				if (extAttr.isKeywords()) {
+					keywords = srcMailNode.getKeywords();
+				}
+
+				if (extAttr.isCategories()) {
+					categories = srcMailNode.getCategories();
+				}
+
+				if (extAttr.isPropertyGroups()) {
+					propertyGroups = srcMailNode.getProperties();
+				}
+
+				if (extAttr.isNotes()) {
+					notes = NodeNoteDAO.getInstance().findByParent(srcMailNode.getUuid());
+				}
+
+				if (extAttr.isWiki()) {
+					wiki = WikiPageDAO.findLatestByNode(srcMailNode.getUuid());
+				}
+			}
+
+			Ref<FileUploadResponse> fuResponse = new Ref<FileUploadResponse>(new FileUploadResponse());
 			newMail = create(user, dstPath, dstFldNode, srcMailNode.getName(), srcMailNode.getSize(), srcMailNode.getFrom(), reply, to, cc,
-					bcc, srcMailNode.getSentDate(), srcMailNode.getReceivedDate(), srcMailNode.getSubject(), srcMailNode.getContent(),
-					srcMailNode.getMimeType(), keywords, categories, fuResponse);
+				bcc, srcMailNode.getSentDate(), srcMailNode.getReceivedDate(), srcMailNode.getSubject(), srcMailNode.getContent(),
+				srcMailNode.getMimeType(), keywords, categories, propertyGroups, notes, wiki, fuResponse);
 
 			// Add attachments
 			for (NodeDocument nDocument : NodeDocumentDAO.getInstance().findByParent(srcMailNode.getUuid())) {

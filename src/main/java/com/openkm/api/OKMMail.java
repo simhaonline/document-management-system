@@ -21,30 +21,41 @@
 
 package com.openkm.api;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.auxilii.msgparser.Message;
 import com.auxilii.msgparser.MsgParser;
 import com.openkm.automation.AutomationException;
 import com.openkm.bean.ExtendedAttributes;
 import com.openkm.bean.Mail;
-import com.openkm.core.*;
+import com.openkm.core.AccessDeniedException;
+import com.openkm.core.DatabaseException;
+import com.openkm.core.FileSizeExceededException;
+import com.openkm.core.ItemExistsException;
+import com.openkm.core.LockException;
+import com.openkm.core.PathNotFoundException;
+import com.openkm.core.RepositoryException;
+import com.openkm.core.UnsupportedMimeTypeException;
+import com.openkm.core.UserQuotaExceededException;
+import com.openkm.core.VirusDetectedException;
 import com.openkm.extension.core.ExtensionException;
 import com.openkm.module.MailModule;
 import com.openkm.module.ModuleManager;
 import com.openkm.spring.PrincipalUtils;
 import com.openkm.util.MailUtils;
 import com.openkm.util.PathUtils;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
 
 /**
  * @author pavila

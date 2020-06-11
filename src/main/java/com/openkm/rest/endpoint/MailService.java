@@ -67,7 +67,7 @@ import io.swagger.annotations.Api;
 
 @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
 @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-@Api(description="mail-service", value="mail-service")
+@Api(description = "mail-service", value = "mail-service")
 @Path("/mail")
 public class MailService {
 	private static Logger log = LoggerFactory.getLogger(MailService.class);
@@ -143,12 +143,12 @@ public class MailService {
 
 	@GET
 	@Path("/getChildren")
-	public MailList getChildren(@QueryParam("mailId") String mailId) throws GenericException {
+	public MailList getChildren(@QueryParam("fldId") String fldId) throws GenericException {
 		try {
-			log.debug("getChildren({})", mailId);
+			log.debug("getChildren({})", fldId);
 			MailModule mm = ModuleManager.getMailModule();
 			MailList ml = new MailList();
-			ml.getList().addAll(mm.getChildren(null, mailId));
+			ml.getList().addAll(mm.getChildren(null, fldId));
 			log.debug("getChildren: {}", ml);
 			return ml;
 		} catch (Exception e) {
@@ -216,10 +216,10 @@ public class MailService {
 	public void extendedCopy(@QueryParam("mailId") String mailId, @QueryParam("dstId") String dstId,
 							 @QueryParam("categories") boolean categories, @QueryParam("keywords") boolean keywords,
 							 @QueryParam("propertyGroups") boolean propertyGroups, @QueryParam("notes") boolean notes,
-							 @QueryParam("wiki") boolean wiki, @QueryParam("newName") String newName) throws GenericException {
+							 @QueryParam("wiki") boolean wiki) throws GenericException {
 		try {
-			log.debug("extendedCopy({}, {}, {}, {}, {}, {}, {}, {})", mailId, dstId, categories, keywords, propertyGroups,
-				notes, wiki, newName);
+			log.debug("extendedCopy({}, {}, {}, {}, {}, {}, {})", mailId, dstId, categories, keywords, propertyGroups,
+				notes, wiki);
 			MailModule mm = ModuleManager.getMailModule();
 			ExtendedAttributes extAttr = new ExtendedAttributes();
 			extAttr.setCategories(categories);
@@ -239,8 +239,8 @@ public class MailService {
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	// The "dstId" and "content" parameters comes in the POST request body.
 	public Mail importEml(List<Attachment> atts) throws RepositoryException, AccessDeniedException, PathNotFoundException,
-			DatabaseException, IOException, AutomationException, UserQuotaExceededException, FileSizeExceededException,
-			ExtensionException, UnsupportedMimeTypeException, ItemExistsException, VirusDetectedException, MessagingException {
+		DatabaseException, IOException, AutomationException, UserQuotaExceededException, FileSizeExceededException,
+		ExtensionException, UnsupportedMimeTypeException, ItemExistsException, VirusDetectedException, MessagingException {
 		log.debug("importEml({})", atts);
 		InputStream is = null;
 		String dstPath = null;
@@ -273,8 +273,8 @@ public class MailService {
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	// The "dstId" and "content" parameters comes in the POST request body.
 	public Mail importMsg(List<Attachment> atts) throws RepositoryException, AccessDeniedException, PathNotFoundException,
-			DatabaseException, IOException, AutomationException, UserQuotaExceededException, FileSizeExceededException,
-			ExtensionException, UnsupportedMimeTypeException, ItemExistsException, VirusDetectedException, MessagingException {
+		DatabaseException, IOException, AutomationException, UserQuotaExceededException, FileSizeExceededException,
+		ExtensionException, UnsupportedMimeTypeException, ItemExistsException, VirusDetectedException, MessagingException {
 		log.debug("importMsg({})", atts);
 		InputStream is = null;
 		String dstPath = null;
